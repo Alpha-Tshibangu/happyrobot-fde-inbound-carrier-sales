@@ -1,0 +1,37 @@
+# Fly.io deployment configuration for HappyRobot Backend
+app = "happyrobot-backend"
+primary_region = "iad"
+console_command = "/bin/bash"
+
+[build]
+  dockerfile = "Dockerfile"
+
+[env]
+  PORT = "8080"
+  ENVIRONMENT = "production"
+
+[http_service]
+  internal_port = 8080
+  force_https = true
+  auto_stop_machines = true
+  auto_start_machines = true
+  min_machines_running = 1
+  processes = ["app"]
+
+  [http_service.concurrency]
+    type = "connections"
+    hard_limit = 25
+    soft_limit = 20
+
+[[vm]]
+  cpu_kind = "shared"
+  cpus = 1
+  memory_mb = 256
+
+[deploy]
+  release_command = "python -m app.db.seed"
+
+[mounts]
+  source = "happyrobot_data"
+  destination = "/data"
+  processes = ["app"]

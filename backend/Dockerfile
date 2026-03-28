@@ -14,12 +14,20 @@ RUN pip install --no-cache-dir -r requirements.txt
 # Copy application code
 COPY . .
 
-# Create a non-root user
-RUN useradd -m -u 1000 appuser && chown -R appuser:appuser /app
+# Create database directory for persistent volume
+RUN mkdir -p /data
+
+# Create a non-root user and give ownership
+RUN useradd -m -u 1000 appuser && \
+    chown -R appuser:appuser /app && \
+    chown -R appuser:appuser /data
 USER appuser
 
-# Expose port
-EXPOSE 8000
+# Set environment variable for database location
+ENV DATABASE_URL=sqlite:////data/happyrobot.db
 
-# Run the application
-CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000"]
+# Expose port (Fly.io uses 8080 internally)
+EXPOSE 8080
+
+# Run the application on port 8080
+CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8080"]
