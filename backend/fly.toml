@@ -9,6 +9,9 @@ console_command = "/bin/bash"
 [env]
   PORT = "8080"
   ENVIRONMENT = "production"
+  DATABASE_URL = "sqlite:////data/happyrobot.db"
+  API_KEY = "hr_9b477b80e2674d708437db35753e3207"
+  FMCSA_API_KEY = "cdc33e44d693a3a58451898d4ec9df862c65b954"
 
 [http_service]
   internal_port = 8080
@@ -26,7 +29,7 @@ console_command = "/bin/bash"
 [[vm]]
   cpu_kind = "shared"
   cpus = 1
-  memory_mb = 256
+  memory_mb = 512
 
 [deploy]
   release_command = "python -m app.db.seed"
