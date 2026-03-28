@@ -1,11 +1,14 @@
 from datetime import datetime, timedelta
 import random
-from app.db.database import SessionLocal
+from app.db.database import SessionLocal, engine, Base
 from app.models.load import Load
 from app.models.call import Call
 
 
 def seed_database():
+    # Create all tables first
+    Base.metadata.create_all(bind=engine)
+
     db = SessionLocal()
 
     # Check if call data already exists (loads might exist but we need calls for the dashboard)
