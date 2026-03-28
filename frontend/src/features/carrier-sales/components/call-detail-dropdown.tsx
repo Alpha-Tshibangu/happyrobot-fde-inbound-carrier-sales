@@ -98,11 +98,13 @@ export function CallDetailDropdown({ callId }: CallDetailDropdownProps) {
     if (!callDetails.initial_offer || !callDetails.final_price) return [];
 
     const steps = callDetails.negotiation_rounds || 1;
-    const priceStep = (callDetails.initial_offer - callDetails.final_price) / steps;
+    const initialOffer = callDetails.initial_offer;
+    const finalPrice = callDetails.final_price;
+    const priceStep = (initialOffer - finalPrice) / steps;
 
     return Array.from({ length: steps + 1 }, (_, i) => ({
       round: i === 0 ? 'Initial' : i === steps ? 'Final' : `Round ${i}`,
-      price: callDetails.initial_offer - (priceStep * i),
+      price: initialOffer - (priceStep * i),
     }));
   };
 
@@ -255,19 +257,9 @@ export function CallDetailDropdown({ callId }: CallDetailDropdownProps) {
                   </span>
                 </div>
                 <div className="flex justify-between">
-                  <span className="text-xs text-muted-foreground">Pieces</span>
-                  <span className="text-xs font-medium">{loadDetails.num_of_pieces || 'N/A'}</span>
-                </div>
-                <div className="flex justify-between">
                   <span className="text-xs text-muted-foreground">Board Rate</span>
                   <span className="text-xs font-medium">
                     {loadDetails.loadboard_rate ? `$${loadDetails.loadboard_rate.toLocaleString()}` : 'N/A'}
-                  </span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-xs text-muted-foreground">Dimensions</span>
-                  <span className="text-xs font-medium truncate max-w-[120px]" title={loadDetails.dimensions}>
-                    {loadDetails.dimensions || 'N/A'}
                   </span>
                 </div>
               </>

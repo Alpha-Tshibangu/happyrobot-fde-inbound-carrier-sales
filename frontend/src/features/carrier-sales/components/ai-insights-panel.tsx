@@ -52,7 +52,7 @@ export function AIInsightsPanel({
       // Fetch all types of insights in parallel
       const [daily, anomalies, predictions, recommendations] = await Promise.all([
         aiInsightsService.generateDailyInsights(metrics, summary),
-        aiInsightsService.detectAnomalies(metrics),
+        aiInsightsService.detectAnomalies(metrics, summary),
         aiInsightsService.generatePredictions(metrics, summary),
         aiInsightsService.generateRecommendations(metrics, summary),
       ]);

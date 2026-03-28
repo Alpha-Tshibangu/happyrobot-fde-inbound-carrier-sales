@@ -61,16 +61,12 @@ export interface Load {
   notes?: string;
 }
 
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:8000';
-const API_KEY = process.env.NEXT_PUBLIC_API_KEY || 'test-key';
-
 class ApiService {
   private async fetchApi<T>(endpoint: string, options: RequestInit = {}): Promise<T> {
-    const response = await fetch(`${API_BASE_URL}${endpoint}`, {
+    const response = await fetch(endpoint, {
       ...options,
       headers: {
         'Content-Type': 'application/json',
-        'x-api-key': API_KEY,
         ...options.headers,
       },
     });
@@ -83,19 +79,19 @@ class ApiService {
   }
 
   async getDashboardMetrics(): Promise<CallStats> {
-    return this.fetchApi<CallStats>('/api/v1/dashboard');
+    return this.fetchApi<CallStats>('/api/dashboard');
   }
 
   async getDashboardSummary(): Promise<DashboardSummary> {
-    return this.fetchApi<DashboardSummary>('/api/v1/dashboard/summary');
+    return this.fetchApi<DashboardSummary>('/api/dashboard/summary');
   }
 
   async getCalls(): Promise<Call[]> {
-    return this.fetchApi<Call[]>('/api/v1/calls');
+    return this.fetchApi<Call[]>('/api/calls');
   }
 
   async getCall(callId: number): Promise<Call> {
-    return this.fetchApi<Call>(`/api/v1/calls/${callId}`);
+    return this.fetchApi<Call>(`/api/calls/${callId}`);
   }
 
   async getLoads(filters?: {
@@ -109,13 +105,13 @@ class ApiService {
     if (filters?.equipment_type) params.append('equipment_type', filters.equipment_type);
 
     const queryString = params.toString();
-    const endpoint = `/api/v1/loads${queryString ? `?${queryString}` : ''}`;
+    const endpoint = `/api/loads${queryString ? `?${queryString}` : ''}`;
 
     return this.fetchApi<Load[]>(endpoint);
   }
 
   async getLoad(loadId: string): Promise<Load> {
-    return this.fetchApi<Load>(`/api/v1/loads/${loadId}`);
+    return this.fetchApi<Load>(`/api/loads/${loadId}`);
   }
 
   async recordCall(callData: {
@@ -131,7 +127,7 @@ class ApiService {
     notes?: string;
     duration_seconds?: number;
   }): Promise<{ id: number; created_at: string; success: boolean }> {
-    return this.fetchApi('/api/v1/calls', {
+    return this.fetchApi('/api/calls', {
       method: 'POST',
       body: JSON.stringify(callData),
     });
@@ -145,7 +141,7 @@ class ApiService {
     out_of_service?: boolean;
     error?: string;
   }> {
-    return this.fetchApi('/api/v1/verify-carrier', {
+    return this.fetchApi('/api/verify-carrier', {
       method: 'POST',
       body: JSON.stringify({ mc_number: mcNumber }),
     });

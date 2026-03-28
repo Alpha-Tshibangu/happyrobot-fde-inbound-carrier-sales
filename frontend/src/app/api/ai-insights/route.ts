@@ -74,7 +74,7 @@ export async function POST(request: Request) {
           const { message, context, conversationHistory } = data;
 
           // Build messages array starting with system prompt
-          const messages = [
+          const messages: Array<{ role: "system" | "user" | "assistant"; content: string }> = [
             {
               role: "system",
               content: `You are a carrier sales analyst AI. Analyze questions and provide both textual responses AND chart visualizations when appropriate.
@@ -137,7 +137,7 @@ Chart guidelines:
 
 EXAMPLE:
 "response": "From the data shown in the chart, most calls are neutral, indicating significant potential to shift these towards positive with improved communication strategies. The high negative sentiment directly impacts conversion rates and should be addressed through better initial pricing and response times."`
-            } as const
+            }
           ];
 
           // Add conversation history if provided
