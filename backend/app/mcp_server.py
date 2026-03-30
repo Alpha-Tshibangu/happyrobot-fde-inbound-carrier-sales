@@ -25,6 +25,7 @@ from app.models.call import Call
 from app.models.load import Load
 from app.services.carrier_service import verify_carrier_service
 from app.services.dashboard_service import get_dashboard_metrics_service
+from app.services.load_management_service import LoadManagementService
 
 mcp_router = APIRouter(prefix="/mcp", tags=["MCP Tools"])
 
@@ -64,7 +65,6 @@ class CallRecordInput(BaseModel):
     initial_offer: Optional[float] = None
     final_price: Optional[float] = None
     negotiation_rounds: int = 0
-    extracted_data: Optional[Dict[str, Any]] = None
     notes: Optional[str] = None
     duration_seconds: Optional[int] = None
 
@@ -89,10 +89,31 @@ class MCPCarrierService:
             query = db.query(Load)
 
             if filters.get("origin"):
-                query = query.filter(Load.origin.ilike(f"%{filters['origin']}%"))
+                # Extract city name from either "Birmingham Alabama" or "Birmingham, AL" format
+                origin = filters['origin']
+                if ',' in origin:
+                    # Format is "City, ST" - just get the city part
+                    city = origin.split(',')[0].strip()
+                else:
+                    # Format is likely "City State" - split from right to separate state
+                    parts = origin.rsplit(' ', 1)
+                    city = parts[0] if len(parts) > 1 else origin
+                print(f"DEBUG - Searching origin with city: '{city}' from input: '{origin}'")
+                query = query.filter(Load.origin.ilike(f"%{city}%"))
+
             if filters.get("destination"):
+                # Extract city name from either "Atlanta Georgia" or "Atlanta, GA" format
+                destination = filters['destination']
+                if ',' in destination:
+                    # Format is "City, ST" - just get the city part
+                    city = destination.split(',')[0].strip()
+                else:
+                    # Format is likely "City State" - split from right to separate state
+                    parts = destination.rsplit(' ', 1)
+                    city = parts[0] if len(parts) > 1 else destination
+                print(f"DEBUG - Searching destination with city: '{city}' from input: '{destination}'")
                 query = query.filter(
-                    Load.destination.ilike(f"%{filters['destination']}%")
+                    Load.destination.ilike(f"%{city}%")
                 )
             if filters.get("equipment_type"):
                 query = query.filter(Load.equipment_type == filters["equipment_type"])
@@ -132,16 +153,26 @@ class MCPCarrierService:
         """Record call details and outcome for tracking."""
         db = SessionLocal()
         try:
+            # Handle string price formats like "$410" -> 410.0
+            def parse_price(price_value):
+                if price_value is None:
+                    return None
+                if isinstance(price_value, str):
+                    # Remove dollar sign and convert to float
+                    return float(price_value.replace('$', '').replace(',', ''))
+                return float(price_value)
+
+            print(f"DEBUG - Recording call with data: {call_data}")
+
             call = Call(
                 carrier_mc_number=call_data["carrier_mc_number"],
                 carrier_name=call_data.get("carrier_name"),
                 load_id=call_data.get("load_id"),
                 outcome=call_data["outcome"],
                 sentiment=call_data["sentiment"],
-                initial_offer=call_data.get("initial_offer"),
-                final_price=call_data.get("final_price"),
+                initial_offer=parse_price(call_data.get("initial_offer")),
+                final_price=parse_price(call_data.get("final_price")),
                 negotiation_rounds=call_data.get("negotiation_rounds", 0),
-                extracted_data=call_data.get("extracted_data"),
                 notes=call_data.get("notes"),
                 duration_seconds=call_data.get("duration_seconds"),
             )
@@ -150,9 +181,29 @@ class MCPCarrierService:
             db.commit()
             db.refresh(call)
 
+            # Automatically update load status if call was successful and load_id provided
+            load_updated = False
+            if (call_data["outcome"] == "booked" and
+                call_data.get("load_id") and
+                call_data.get("final_price") and
+                call_data.get("carrier_name")):
+
+                try:
+                    updated_load = LoadManagementService.book_load_from_call(
+                        db=db,
+                        load_id=call_data["load_id"],
+                        carrier_mc=call_data["carrier_mc_number"],
+                        carrier_name=call_data["carrier_name"],
+                        final_price=call_data["final_price"]
+                    )
+                    load_updated = bool(updated_load)
+                except Exception as e:
+                    print(f"Failed to update load status: {e}")
+
             return {
                 "id": call.id,
                 "created_at": call.created_at.isoformat() if call.created_at else None,
+                "load_updated": load_updated,
                 "success": True,
             }
         except Exception as e:
@@ -287,12 +338,16 @@ class MCPServer:
                 tool_name = request.params.get("name")
                 arguments = request.params.get("arguments", {})
 
+                print(f"DEBUG - MCP tool call: {tool_name} with arguments: {arguments}")
+
                 if tool_name == "verify-carrier":
                     result = await MCPCarrierService.verify_carrier(
                         arguments["mc_number"]
                     )
                 elif tool_name == "search-loads":
+                    print(f"DEBUG - Calling search_loads with filters: {arguments}")
                     result = MCPCarrierService.search_loads(arguments)
+                    print(f"DEBUG - search_loads returned {len(result) if isinstance(result, list) else 'error'} results")
                 elif tool_name == "record-call":
                     result = MCPCarrierService.record_call(arguments)
                 else:
@@ -376,9 +431,23 @@ def mcp_search_loads(input_data: LoadSearchInput, api_key: str = Depends(verify_
         query = db.query(Load)
 
         if input_data.origin:
-            query = query.filter(Load.origin.ilike(f"%{input_data.origin}%"))
+            # Extract city name from either "Birmingham Alabama" or "Birmingham, AL" format
+            origin = input_data.origin
+            if ',' in origin:
+                city = origin.split(',')[0].strip()
+            else:
+                parts = origin.rsplit(' ', 1)
+                city = parts[0] if len(parts) > 1 else origin
+            query = query.filter(Load.origin.ilike(f"%{city}%"))
         if input_data.destination:
-            query = query.filter(Load.destination.ilike(f"%{input_data.destination}%"))
+            # Extract city name from either "Atlanta Georgia" or "Atlanta, GA" format
+            destination = input_data.destination
+            if ',' in destination:
+                city = destination.split(',')[0].strip()
+            else:
+                parts = destination.rsplit(' ', 1)
+                city = parts[0] if len(parts) > 1 else destination
+            query = query.filter(Load.destination.ilike(f"%{city}%"))
         if input_data.equipment_type:
             query = query.filter(Load.equipment_type == input_data.equipment_type)
         if input_data.pickup_date_from:
@@ -418,16 +487,26 @@ def mcp_record_call(input_data: CallRecordInput, api_key: str = Depends(verify_a
     """Record details from a carrier call interaction."""
     db = SessionLocal()
     try:
+        # Handle string price formats like "$410" -> 410.0
+        def parse_price(price_value):
+            if price_value is None:
+                return None
+            if isinstance(price_value, str):
+                # Remove dollar sign and convert to float
+                return float(price_value.replace('$', '').replace(',', ''))
+            return float(price_value)
+
+        print(f"DEBUG - Recording call via HTTP with data: {input_data}")
+
         call = Call(
             carrier_mc_number=input_data.carrier_mc_number,
             carrier_name=input_data.carrier_name,
             load_id=input_data.load_id,
             outcome=input_data.outcome,
             sentiment=input_data.sentiment,
-            initial_offer=input_data.initial_offer,
-            final_price=input_data.final_price,
+            initial_offer=parse_price(input_data.initial_offer),
+            final_price=parse_price(input_data.final_price),
             negotiation_rounds=input_data.negotiation_rounds,
-            extracted_data=input_data.extracted_data,
             notes=input_data.notes,
             duration_seconds=input_data.duration_seconds,
         )

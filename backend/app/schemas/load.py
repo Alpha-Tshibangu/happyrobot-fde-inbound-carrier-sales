@@ -20,10 +20,26 @@ class LoadBase(BaseModel):
 
 
 class LoadCreate(LoadBase):
-    pass
+    status: Optional[str] = "available"
+    booked_carrier_mc: Optional[str] = None
+    booked_carrier_name: Optional[str] = None
+    booked_rate: Optional[float] = None
+    margin_dollars: Optional[float] = None
+    customer_confirmed: Optional[bool] = False
+    urgency_level: Optional[str] = "medium"
 
 
 class Load(LoadBase):
+    status: str = "available"
+    booked_carrier_mc: Optional[str] = None
+    booked_carrier_name: Optional[str] = None
+    booked_rate: Optional[float] = None
+    margin_dollars: Optional[float] = None
+    customer_confirmed: bool = False
+    urgency_level: str = "medium"
+    created_at: datetime
+    updated_at: datetime
+
     class Config:
         from_attributes = True
 
@@ -34,3 +50,27 @@ class LoadSearch(BaseModel):
     equipment_type: Optional[str] = None
     pickup_date_from: Optional[datetime] = None
     pickup_date_to: Optional[datetime] = None
+    status: Optional[str] = None
+    urgency_level: Optional[str] = None
+
+
+class LoadStatusUpdate(BaseModel):
+    status: str
+    booked_carrier_mc: Optional[str] = None
+    booked_carrier_name: Optional[str] = None
+    booked_rate: Optional[float] = None
+    customer_confirmed: Optional[bool] = None
+    urgency_level: Optional[str] = None
+
+
+class LoadMetrics(BaseModel):
+    total_loads: int
+    available_loads: int
+    booked_loads: int
+    in_transit_loads: int
+    delivered_loads: int
+    cancelled_loads: int
+    coverage_rate: float
+    average_margin: float
+    total_margin: float
+    urgent_loads: int

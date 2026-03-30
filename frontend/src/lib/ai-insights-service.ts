@@ -16,9 +16,9 @@ export interface ConversationalResponse {
   message: string;
   insights?: AIInsight[];
   chart?: {
-    type: 'bar' | 'line' | 'pie' | null;
+    type: 'bar' | 'grouped-bar' | 'line' | 'pie' | null;
     title: string;
-    data: Array<{name: string; value: number}>;
+    data: Array<{name: string; value: number; current?: number; suggested?: number}>;
     insights?: string[];
   } | null;
   followUpQuestions?: string[];

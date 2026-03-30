@@ -7,11 +7,14 @@ from app.api import loads, carriers, calls, dashboard
 from app.mcp_server import mcp_router
 from app.db.database import engine, Base
 from app.db.seed import seed_database
+from app.db.migrate import migrate_database
 
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    Base.metadata.create_all(bind=engine)
+    # Run migrations to handle schema changes
+    migrate_database()
+    # Seed initial data if needed
     seed_database()
     yield
 

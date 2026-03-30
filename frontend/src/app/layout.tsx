@@ -26,7 +26,7 @@ export const metadata: Metadata = {
 };
 
 export const viewport: Viewport = {
-  themeColor: META_THEME_COLORS.light
+  themeColor: META_THEME_COLORS.dark
 };
 
 export default async function RootLayout({
@@ -39,16 +39,16 @@ export default async function RootLayout({
   const themeToApply = activeThemeValue || DEFAULT_THEME;
 
   return (
-    <html lang='en' suppressHydrationWarning data-theme={themeToApply}>
+    <html lang='en' suppressHydrationWarning data-theme={themeToApply} className='dark'>
       <head>
         <script
           dangerouslySetInnerHTML={{
             __html: `
               try {
-                // Set meta theme color
-                if (localStorage.theme === 'dark' || ((!('theme' in localStorage) || localStorage.theme === 'system') && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
-                  document.querySelector('meta[name="theme-color"]')?.setAttribute('content', '${META_THEME_COLORS.dark}')
-                }
+                // Force dark mode
+                document.documentElement.classList.add('dark')
+                document.querySelector('meta[name="theme-color"]')?.setAttribute('content', '${META_THEME_COLORS.dark}')
+                localStorage.theme = 'dark'
               } catch (_) {}
             `
           }}
@@ -64,10 +64,11 @@ export default async function RootLayout({
         <NuqsAdapter>
           <ThemeProvider
             attribute='class'
-            defaultTheme='system'
-            enableSystem
+            defaultTheme='dark'
+            enableSystem={false}
             disableTransitionOnChange
             enableColorScheme
+            forcedTheme='dark'
           >
             <Providers activeThemeValue={themeToApply}>
               <Toaster />

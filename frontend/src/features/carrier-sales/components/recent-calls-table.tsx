@@ -14,8 +14,11 @@ import { CallDetailDropdown } from './call-detail-dropdown';
 interface RecentCall {
   id: number;
   carrier_name?: string;
+  carrier_mc_number: string;
+  load_id?: string;
   outcome: string;
   sentiment: string;
+  duration_seconds?: number;
   created_at?: string;
 }
 
@@ -36,12 +39,23 @@ export function RecentCallsTable({ calls }: RecentCallsTableProps) {
   };
 
   const formatDate = (dateString?: string) => {
-    if (!dateString) return 'N/A';
+    if (!dateString) return { date: 'N/A', time: 'N/A' };
     try {
-      return new Date(dateString).toLocaleString();
+      const date = new Date(dateString);
+      return {
+        date: date.toLocaleDateString(),
+        time: date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+      };
     } catch {
-      return 'Invalid Date';
+      return { date: 'Invalid Date', time: 'Invalid Time' };
     }
+  };
+
+  const formatDuration = (seconds?: number) => {
+    if (!seconds) return 'N/A';
+    const mins = Math.floor(seconds / 60);
+    const secs = seconds % 60;
+    return `${mins}:${secs.toString().padStart(2, '0')}`;
   };
 
   if (!calls.length) {
@@ -69,14 +83,18 @@ export function RecentCallsTable({ calls }: RecentCallsTableProps) {
           <TableHeader>
             <TableRow>
               <TableHead>Call ID</TableHead>
+              <TableHead>Load ID</TableHead>
+              <TableHead>MC Number</TableHead>
               <TableHead>Carrier</TableHead>
               <TableHead>Outcome</TableHead>
               <TableHead>Sentiment</TableHead>
-              <TableHead>Date & Time</TableHead>
+              <TableHead>Duration</TableHead>
+              <TableHead>Date</TableHead>
+              <TableHead>Time</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
-            {calls.map((call, index) => (
+            {calls.map((call) => (
               <React.Fragment key={call.id}>
                 <TableRow
                   className={`cursor-pointer relative ${expandedCallId === call.id ? 'border-b-0' : ''}`}
@@ -85,6 +103,12 @@ export function RecentCallsTable({ calls }: RecentCallsTableProps) {
                   }}
                 >
                   <TableCell className="font-medium">#{call.id}</TableCell>
+                  <TableCell className="font-medium">
+                    {call.load_id || 'N/A'}
+                  </TableCell>
+                  <TableCell className="font-medium">
+                    {call.carrier_mc_number}
+                  </TableCell>
                   <TableCell>
                     {call.carrier_name || 'Unknown Carrier'}
                   </TableCell>
@@ -98,13 +122,19 @@ export function RecentCallsTable({ calls }: RecentCallsTableProps) {
                       {call.sentiment.charAt(0).toUpperCase() + call.sentiment.slice(1)}
                     </span>
                   </TableCell>
-                  <TableCell className="text-sm text-muted-foreground">
-                    {formatDate(call.created_at)}
+                  <TableCell>
+                    {formatDuration(call.duration_seconds)}
+                  </TableCell>
+                  <TableCell>
+                    {formatDate(call.created_at).date}
+                  </TableCell>
+                  <TableCell>
+                    {formatDate(call.created_at).time}
                   </TableCell>
                 </TableRow>
                 {expandedCallId === call.id && (
                   <tr>
-                    <td colSpan={5} className="p-0 border-b overflow-hidden">
+                    <td colSpan={9} className="p-0 border-b overflow-hidden">
                       <div className="animate-in slide-in-from-top-2 duration-300">
                         <CallDetailDropdown callId={call.id} />
                       </div>

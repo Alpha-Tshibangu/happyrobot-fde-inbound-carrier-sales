@@ -9,6 +9,7 @@ import {
   CardHeader,
   CardTitle,
 } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
 import { CallOutcomesChart } from './call-outcomes-chart';
@@ -16,8 +17,9 @@ import { SentimentDistributionChart } from './sentiment-distribution-chart';
 import { NegotiationMetricsChart } from './negotiation-metrics-chart';
 import { RecentCallsTable } from './recent-calls-table';
 import { TopCarriersChart } from './top-carriers-chart';
-import { AIChatInterface } from './ai-chat-interface';
+import { AIAssistantInlinePanel } from './ai-assistant-inline-panel';
 import { HappyRobotFullLogo } from '@/components/icons/HappyRobotFullLogo';
+import LoadManagementOverview from '@/features/load-management/components/load-management-overview';
 import {
   IconPhone,
   IconTrendingUp,
@@ -25,6 +27,7 @@ import {
   IconHandOff,
   IconMoodSmile,
   IconClock,
+  IconSparkles,
 } from '@tabler/icons-react';
 import { apiService, type CallStats, type DashboardSummary } from '@/lib/api-service';
 import { DashboardSkeleton } from '@/components/ui/loading-spinner';
@@ -34,7 +37,8 @@ export default function CarrierSalesOverview() {
   const [summary, setSummary] = useState<DashboardSummary | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [activeTab, setActiveTab] = useState('ai-insights');
+  const [activeTab, setActiveTab] = useState('load-management');
+  const [isAIAssistantOpen, setIsAIAssistantOpen] = useState(true);
 
 
   useEffect(() => {
@@ -89,27 +93,45 @@ export default function CarrierSalesOverview() {
   const formatNumber = (value: number) => value.toLocaleString();
 
   return (
-    <PageContainer>
-      <div className="flex flex-1 flex-col space-y-2">
-        <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-4">
+    <div className="flex h-screen">
+      {/* Main Content Area */}
+      <div className="flex-1 flex flex-col transition-all duration-500 ease-in-out">
+        <div className="sticky top-0 z-10 bg-background px-4 py-4 md:px-6">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
               <HappyRobotFullLogo className="h-6" />
               <span className="text-muted-foreground text-xl font-light">|</span>
               <h2 className="text-xl font-medium tracking-tight">
-                Carrier Sales Dashboard
+                Freight Operations Dashboard
               </h2>
             </div>
-            <div className="hidden items-center space-x-2 md:flex">
-              <TabsList>
-                <TabsTrigger value="ai-insights">AI Insights</TabsTrigger>
-                <TabsTrigger value="overview">Call Overview</TabsTrigger>
-                <TabsTrigger value="recent-calls">Recent Calls</TabsTrigger>
-              </TabsList>
+            <div className="hidden items-center gap-2 md:flex">
+              <Tabs value={activeTab} onValueChange={setActiveTab}>
+                <TabsList>
+                  <TabsTrigger value="load-management">Load Management</TabsTrigger>
+                  <TabsTrigger value="overview">Call Analytics</TabsTrigger>
+                  <TabsTrigger value="recent-calls">Recent Calls</TabsTrigger>
+                </TabsList>
+              </Tabs>
+              <Button
+                variant="outline"
+                size="icon"
+                onClick={() => setIsAIAssistantOpen(!isAIAssistantOpen)}
+                className="ml-2 h-9 w-9 rounded-full"
+              >
+                <IconSparkles className="size-4" />
+              </Button>
             </div>
           </div>
+        </div>
 
-          <TabsContent value="overview" className="space-y-4">
+        <div className="flex-1 overflow-hidden p-4 md:px-6">
+          <Tabs value={activeTab} onValueChange={setActiveTab} className="h-full flex flex-col">
+          <TabsContent value="load-management" className="h-full flex flex-col overflow-hidden">
+            <LoadManagementOverview />
+          </TabsContent>
+
+          <TabsContent value="overview" className="space-y-4 flex-1 overflow-auto h-full">
             {/* Key Metrics Cards */}
             <div
               className="relative rounded-lg overflow-hidden bg-cover bg-center bg-no-repeat"
@@ -243,15 +265,28 @@ export default function CarrierSalesOverview() {
 
           </TabsContent>
 
-          <TabsContent value="recent-calls" className="space-y-4">
+          <TabsContent value="recent-calls" className="space-y-4 overflow-auto h-full">
             <RecentCallsTable calls={summary.recent_calls} />
           </TabsContent>
-
-          <TabsContent value="ai-insights" className="space-y-4">
-            <AIChatInterface metrics={metrics} />
-          </TabsContent>
         </Tabs>
+        </div>
       </div>
-    </PageContainer>
+
+      {/* AI Assistant Panel - Full Height */}
+      <AIAssistantInlinePanel
+        isOpen={isAIAssistantOpen}
+        metrics={metrics}
+      />
+
+      {/* Floating AI Assistant Button for Mobile */}
+      <Button
+        variant="default"
+        size="icon"
+        onClick={() => setIsAIAssistantOpen(true)}
+        className="fixed bottom-6 right-6 z-50 h-12 w-12 rounded-full shadow-lg md:hidden"
+      >
+        <IconSparkles className="size-5" />
+      </Button>
+    </div>
   );
 }

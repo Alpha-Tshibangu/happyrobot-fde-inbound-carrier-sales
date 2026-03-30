@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Integer, String, Float, DateTime, Text, JSON
+from sqlalchemy import Column, Integer, String, Float, DateTime, Text
 from sqlalchemy.sql import func
 from app.db.database import Base
 
@@ -15,7 +15,6 @@ class Call(Base):
     initial_offer = Column(Float)
     final_price = Column(Float)
     negotiation_rounds = Column(Integer, default=0)
-    extracted_data = Column(JSON)
     notes = Column(Text)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     duration_seconds = Column(Integer)

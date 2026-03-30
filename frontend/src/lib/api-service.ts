@@ -37,8 +37,11 @@ export interface DashboardSummary {
   recent_calls: Array<{
     id: number;
     carrier_name?: string;
+    carrier_mc_number: string;
+    load_id?: string;
     outcome: string;
     sentiment: string;
+    duration_seconds?: number;
     created_at?: string;
   }>;
   top_carriers: Array<{
@@ -59,6 +62,37 @@ export interface Load {
   commodity_type?: string;
   miles?: number;
   notes?: string;
+  status: string;
+  booked_carrier_mc?: string;
+  booked_carrier_name?: string;
+  booked_rate?: number;
+  margin_dollars?: number;
+  customer_confirmed: boolean;
+  urgency_level: string;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface LoadMetrics {
+  total_loads: number;
+  available_loads: number;
+  booked_loads: number;
+  in_transit_loads: number;
+  delivered_loads: number;
+  cancelled_loads: number;
+  coverage_rate: number;
+  average_margin: number;
+  total_margin: number;
+  urgent_loads: number;
+}
+
+export interface LoadStatusUpdate {
+  status: string;
+  booked_carrier_mc?: string;
+  booked_carrier_name?: string;
+  booked_rate?: number;
+  customer_confirmed?: boolean;
+  urgency_level?: string;
 }
 
 class ApiService {
@@ -144,6 +178,46 @@ class ApiService {
     return this.fetchApi('/api/verify-carrier', {
       method: 'POST',
       body: JSON.stringify({ mc_number: mcNumber }),
+    });
+  }
+
+  // Load Management Methods
+  async getLoadMetrics(): Promise<LoadMetrics> {
+    return this.fetchApi<LoadMetrics>('/api/loads/metrics');
+  }
+
+  async getAvailableLoads(): Promise<Load[]> {
+    return this.fetchApi<Load[]>('/api/loads/available');
+  }
+
+  async getBookedLoads(): Promise<Load[]> {
+    return this.fetchApi<Load[]>('/api/loads/booked');
+  }
+
+  async updateLoadStatus(loadId: string, statusUpdate: LoadStatusUpdate): Promise<Load> {
+    return this.fetchApi<Load>(`/api/loads/${loadId}/status`, {
+      method: 'PUT',
+      body: JSON.stringify(statusUpdate),
+    });
+  }
+
+  async getLoadCallHistory(loadId: string): Promise<Call[]> {
+    return this.fetchApi<Call[]>(`/api/loads/${loadId}/calls`);
+  }
+
+  async bookLoadManually(
+    loadId: string,
+    carrierMc: string,
+    carrierName: string,
+    bookedRate: number
+  ): Promise<Load> {
+    return this.fetchApi<Load>(`/api/loads/${loadId}/book`, {
+      method: 'POST',
+      body: JSON.stringify({
+        carrier_mc: carrierMc,
+        carrier_name: carrierName,
+        booked_rate: bookedRate,
+      }),
     });
   }
 }

@@ -30,14 +30,13 @@ def get_dashboard_summary(db: Session = Depends(get_db)) -> Dict[str, Any]:
     metrics = get_dashboard_metrics_service()
 
     # Get recent calls
-    recent_calls = db.query(Call).order_by(Call.created_at.desc()).limit(10).all()
+    recent_calls = db.query(Call).order_by(Call.created_at.desc()).all()
 
     # Get top carriers by volume
     top_carriers = (
         db.query(Call.carrier_name, func.count(Call.id).label("call_count"))
         .group_by(Call.carrier_name)
         .order_by(func.count(Call.id).desc())
-        .limit(5)
         .all()
     )
 
@@ -47,8 +46,11 @@ def get_dashboard_summary(db: Session = Depends(get_db)) -> Dict[str, Any]:
             {
                 "id": c.id,
                 "carrier_name": c.carrier_name,
+                "carrier_mc_number": c.carrier_mc_number,
+                "load_id": c.load_id,
                 "outcome": c.outcome,
                 "sentiment": c.sentiment,
+                "duration_seconds": c.duration_seconds,
                 "created_at": c.created_at.isoformat() if c.created_at else None,
             }
             for c in recent_calls

@@ -27,11 +27,14 @@ def create_call(call: CallCreate, db: Session = Depends(get_db)):
 @router.get(
     "/calls", response_model=List[CallSchema], dependencies=[Depends(verify_api_key)]
 )
-def get_calls(limit: int = 100, offset: int = 0, db: Session = Depends(get_db)):
+def get_calls(limit: int = None, offset: int = 0, db: Session = Depends(get_db)):
     """
     Get all recorded calls
     """
-    calls = db.query(Call).offset(offset).limit(limit).all()
+    query = db.query(Call).order_by(Call.created_at.desc()).offset(offset)
+    if limit:
+        query = query.limit(limit)
+    calls = query.all()
     return calls
 
 

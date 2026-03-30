@@ -1,4 +1,5 @@
-from sqlalchemy import Column, Integer, String, Float, DateTime, Text
+from sqlalchemy import Column, Integer, String, Float, DateTime, Text, Boolean
+from sqlalchemy.sql import func
 from app.db.database import Base
 
 
@@ -18,3 +19,14 @@ class Load(Base):
     num_of_pieces = Column(Integer)
     miles = Column(Float)
     dimensions = Column(String)
+
+    # New fields for load management
+    status = Column(String, default="available", index=True)  # available, booked, in_transit, delivered, cancelled
+    booked_carrier_mc = Column(String, index=True)
+    booked_carrier_name = Column(String)
+    booked_rate = Column(Float)
+    margin_dollars = Column(Float)  # booked_rate - loadboard_rate
+    customer_confirmed = Column(Boolean, default=False)
+    urgency_level = Column(String, default="medium")  # low, medium, high
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+    updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
